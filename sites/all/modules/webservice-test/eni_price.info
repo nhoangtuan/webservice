@@ -1,0 +1,14 @@
+name = Eni Price
+description = The module to handle price ENI.
+core = 7.x
+package = ENI Price
+version = 7.x-1.0
+dependencies[] = ctools
+dependencies[] = feeds
+dependencies[] = feeds_tamper
+features[ctools][] = feeds:feeds_importer_default:1
+features[ctools][] = feeds_tamper:feeds_tamper_default:2
+features[features_api][] = api:2
+features[feeds_importer][] = eni_city_electricity_import
+features[feeds_importer][] = eni_city_gaz_import
+features[feeds_tamper][] = eni_city_electricity_import-has_electricity-default_value

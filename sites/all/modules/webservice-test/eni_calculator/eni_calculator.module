@@ -1,0 +1,332 @@
+<?php
+/**
+ * @file
+ * Code for the Calculator feature.
+ */
+
+/**
+ * Implementation of hook_block_info().
+ */
+function eni_calculator_block_info() {
+  // This example comes from node.module.
+  $blocks['eni_calculator'] = array(
+    'info' => t('ENI Calculator'),
+    'cache' => DRUPAL_CACHE_PER_PAGE
+  );
+  // Step 1: Call to action.
+  $blocks['step_1_eni_calculator'] = array(
+    'info' => t('Step 1: Call to action'),
+  );
+  // Step 2 : Where do you live ?
+  $blocks['step_2_eni_calculator'] = array(
+    'info' => t('Step 2 : Where do you live ?'),
+  );
+  // Step 3 Special case : No gaz / electricity in your town.
+  $blocks['step_3_special_eni_calculator'] = array(
+    'info' => t('Step 3 Special case : No gaz / electricity in your town'),
+  );
+  // Step 4 : Show the consumption.
+  $blocks['step_4_eni_calculator'] = array(
+    'info' => t('Step 4 : Show the consumption.'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function eni_calculator_block_view($delta = '') {
+  $block = array();
+  $path_theme = drupal_get_path('theme', 'eni_theme') . "/images/";
+  
+  switch($delta){
+    case 'eni_calculator':    
+      $block['subject'] = '';
+      $block['content'] = theme('eni_calculator', array('path_theme' => $path_theme));
+      break;
+    case 'step_1_eni_calculator':
+      $block['subject'] = '';
+      $block['content'] = theme('step_1_eni_calculator', array('path_theme' => $path_theme));
+      break;
+    case 'step_2_eni_calculator':
+      $block['subject'] = '';
+      $block['content'] = theme('step_2_eni_calculator', array('path_theme' => $path_theme));
+      break;
+    case 'step_3_special_eni_calculator':
+      $block['subject'] = '';
+      $block['content'] = theme('step_3_special_eni_calculator', array('path_theme' => $path_theme));
+      break;
+    case 'step_4_eni_calculator':
+      $block['subject'] = '';
+      $block['content'] = theme('step_4_eni_calculator', array('path_theme' => $path_theme));
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function eni_calculator_theme($existing, $type, $theme, $path) {
+  $module_path = drupal_get_path('module', 'eni_calculator');
+  $themes = array(
+    'eni_calculator' => array(
+      'path' => "{$module_path}/template",
+      'template' => 'eni_calculator'
+    ),
+    'step_1_eni_calculator' => array(
+      'path' => "{$module_path}/template",
+      'template' => 'step_1_eni_calculator'
+    ),
+    'step_2_eni_calculator' => array(
+      'path' => "{$module_path}/template",
+      'template' => 'step_2_eni_calculator'
+    ),
+    'step_3_special_eni_calculator' => array(
+      'path' => "{$module_path}/template",
+      'template' => 'step_3_special_eni_calculator'
+    ),
+    'step_4_eni_calculator' => array(
+      'path' => "{$module_path}/template",
+      'template' => 'step_4_eni_calculator'
+    ),
+    'electric_select' => array(
+      'render element' => 'element',
+    ),
+    'eni_calculator_consumption_form' => array(
+       'path' => "{$module_path}/template",
+       'render element' => 'form',
+       'template' => 'eni_calculator_consumption',
+       'arguments' => array('form' => NULL),
+    )
+  );
+  return $themes;
+}
+
+/**
+ * Implement hook_form().
+ */
+function eni_calculator_consumption_form($form, &$form_state)
+{
+  global $base_url;
+  $path_image = $base_url . '/' . drupal_get_path('theme', 'eni_theme') . '/images/';
+
+  // Form action:
+  $form['#action'] = url('ws/price/getprice');
+
+  // In this step, we will ask the user to give his postal code, then to select his town on a select list.
+  // In order to do that, either we will create a service path.
+  $step_2_eni_calculator = module_invoke('eni_calculator', 'block_view', 'step_2_eni_calculator');    
+  $form['step_2_eni_calculator']['#markup'] = $step_2_eni_calculator['content'];
+  
+  // This step to display the error block.
+  $step_3_special_eni_calculator = module_invoke('eni_calculator', 'block_view', 'step_3_special_eni_calculator');
+  $form['step_3_special_eni_calculator']['#markup'] = $step_3_special_eni_calculator['content'];
+
+  $form['#attributes'] = ['data-budget-calculator' => '', 'novalidate' => 'novalidate'];
+  $form['#prefix'] = '<div class="content">';
+  $form['#suffix'] = '</div>';
+
+  $form['consume_electric'] = array(
+    '#type' => 'select',
+    '#options' => array(
+      '' => t('Je souhaite l\'estimer'),
+      '1' => t('Je connais ma consommation 1'),
+    ),
+    '#id' => 'consumeElectric',
+    '#name' => 'consumeElectric',
+    '#theme' => 'electric_select',
+    '#attributes' => array(
+      'data-key' => 'consumption-estimation-knowledge',
+    ),
+  );
+
+  $options = array(
+    '' => 'Sélectionner la puissance de votre compteur',
+    '3' => t('3 kVA'),
+    '6' => t('6 kVA'),
+    '9' => t('9 kVA'),
+    '12' => t('12 kVA'),
+    '15' => t('15 kVA'),
+    '18' => t('18 kVA'),
+    '24' => t('24 kVA'),
+    '30' => t('30 kVA'),
+    '36' => t('36 kVA'),
+  );
+  
+  $form['meter_electric'] = array(
+    '#type' => 'select',
+    '#id' => 'meterElectric',
+    '#name' => 'meterElectric',
+    '#options' => $options,
+    '#theme' => 'electric_select',
+    '#attributes' => array(
+      'data-key' => 'meter-power',
+    ),
+  );
+
+  $option_electric_type = array(
+    '' => t('Sélectionner le type de compteur'),
+    '0' => t('Base'),
+    '1' => t('Heures pleines / heures creuses'),
+    '2' => t('Semaine / Weekend'),
+  );
+  
+  $form['consume_electric_type'] = array(
+    '#type' => 'select',
+    '#id' => 'consumeElectric-type',
+    '#name' => 'consumeElectric-type',
+    '#options' => $option_electric_type,
+    '#theme' => 'electric_select',
+    '#attributes' => array(
+      'data-key' => 'type-of-measure',
+    ),
+  );
+
+  $form['c1_consume_electric_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'c1-consumeElectric-input',
+    '#name' => 'c1-consumeElectric-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'base',
+    ),
+  );
+
+  $form['c2a_consume_electric_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'c2a-consumeElectric-input',
+    '#name' => 'c2a-consumeElectric-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'peak-hours',
+    ),
+  );
+
+  $form['c2b_consumee_lectric_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'c2b-consumeElectric-input',
+    '#name' => 'c2b-consumeElectric-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'off-peak-hours',
+    ),
+  );
+
+  $form['c3a_consume_electric_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'c3a-consumeElectric-input',
+    '#name' => 'c3a-consumeElectric-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'week',
+    ),
+  );
+
+  $form['c3b_consume_electric_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'c3b-consumeElectric-input',
+    '#name' => 'c3b-consumeElectric-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'weekend',
+    ),
+  );
+
+  $form['consume_gaz_selected'] = array(
+    '#id' => 'consumeGaz-selected',
+    '#name' => 'consumeGaz-selected',
+    '#options' => array(
+      '' => t('Je souhaite l\'estimer'),
+      '1' => t('Je connais ma consommation'),
+    ),
+    '#theme' => 'electric_select',
+    '#attributes' => array(
+      'data-key' => 'consumption-estimation-knowledge',
+    ),
+  );
+
+  $form['e1_consume_gaz_input'] = array(
+    '#type' => 'textfield',
+    '#id' => 'e1-consumeGaz-input',
+    '#name' => 'e1-consumeGaz-input',
+    '#attributes' => array(
+      'class' => 'input-1',
+      'data-key' => 'base',
+    ),
+  );
+
+  return $form;
+}
+
+/**
+ * Hook custom element form at select theme.
+ */
+function theme_electric_select($variables)
+{  
+  $element = $variables['element'];
+  switch($element['#id']) {
+    case 'consumeElectric':
+      $data_target = 'B5';
+      break;
+
+    case 'meterElectric':
+      $data_target = 'B6';
+      break;
+
+    case 'consumeElectric-type':
+      $data_target = 'C';
+      break;
+
+    case 'consumeGaz-selected':
+      $data_target = 'E1';
+      break;
+
+    default:
+      break;    
+  }
+
+  element_set_attributes($element, array('id', 'name', 'size'));
+  return '<select' . drupal_attributes($element['#attributes']) . '>' . electric_select_options($element, NULL, $data_target) . '</select>';
+}
+
+/**
+ *  Custom Option of form select form['consume_electric'].
+ * @param type $element
+ * @param type $choices
+ * @return string
+ */
+function electric_select_options($element, $choices = NULL, $data_target = NULL)
+{
+  if (!isset($choices)) {
+    $choices = $element['#options'];
+  }
+  $value_valid = isset($element['#value']) || array_key_exists('#value', $element);
+  $value_is_array = $value_valid && is_array($element['#value']);
+  $options = '';
+  foreach ($choices as $key => $choice) {
+    if (is_array($choice)) {
+      $options .= '<optgroup label="' . $key . '">';
+      $options .= THEME_form_select_options($element, $choice);
+      $options .= '</optgroup>';
+    } elseif (is_object($choice)) {
+      $options .= THEME_form_select_options($element, $choice->option);
+    } else {
+      $key = (string) $key;
+      if ($value_valid && (!$value_is_array && (string) $element['#value'] === $key || ($value_is_array && in_array($key, $element['#value'])))) {
+        $selected = ' selected="selected"';
+      } else {
+        $selected = '';
+      }
+      if (check_plain($key) == '') {
+        $options .= '<option value="' . check_plain($key) . '"' . $selected . '>' . check_plain($choice) . '</option>';
+      } else {
+        if (strpos($data_target, 'C') !== FALSE) {
+          $data_target = 'C' . (string) ($key + 1);
+        }    
+        $options .= '<option value="' . check_plain($key) . '"' . $selected . ' data-target="' . $data_target . '">' . check_plain($choice) . '</option>';
+      }
+    }
+  }
+  return $options;
+}

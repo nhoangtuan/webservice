@@ -1,0 +1,702 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the ENI price.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * @ingroup entity_example
+ */
+function eni_price_schema() {
+  $schema = array();
+
+  // The name of the table can be any name we choose. However, namespacing the
+  // table with the module name is best practice.
+  $schema['eni_city'] = array(
+    'description' => 'The base table for City ENI entity.',
+    'fields' => array(
+      'insee_code' => array(
+        'description' => 'Code INSEE.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'postal_code' => array(
+        'description' => 'Postal Code.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'city_name' => array(
+        'description' => 'City name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'code_zone' => array(
+        'description' => 'Code Zone.',
+        'type' => 'varchar',
+        'length' => 2,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'has_electricity' => array(
+        'description' => 'Has electricity.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'gaz_level' => array(
+        'description' => 'Gaz level.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('insee_code', 'postal_code'),
+    'indexes' => array(
+      'insee_code' => array('insee_code'),
+      'postal_code' => array('postal_code'),
+      'city_name' => array('city_name'),
+    ),
+  );
+  
+  // Table eni_price_electricity
+  $schema['eni_price_electricity'] = array(
+    'description' => 'The base table for Price Electricity ENI entity.',
+    'fields' => array(
+      'id_offer' => array(
+        'description' => 'ID Offer',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'offer_name' => array(
+        'description' => 'Offer name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'offer_type' => array(
+        'description' => 'Offer type',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,        
+      ),
+      'power' => array(
+        'description' => 'Power',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'price_option' => array(
+        'description' => 'Price option',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pourcentage_discount_kwh' => array(
+        'description' => 'Pourcentage discount kwh',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'pourcentage_discount_sub' => array(
+        'description' => 'Pourcentage discount sub',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),      
+      'eni_price_kwh_ht' => array(
+        'description' => 'ENI Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_price_kwh_ttc' => array(
+        'description' => 'ENI Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_subscription_ht' => array(
+        'description' => 'ENI Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_subscription_ttc' => array(
+        'description' => 'ENI Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_price_kwh_ht' => array(
+        'description' => 'GRD Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_price_kwh_ttc' => array(
+        'description' => 'GRD Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_subscription_ht' => array(
+        'description' => 'GRD Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_subscription_ttc' => array(
+        'description' => 'GRD Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'CTA' => array(
+        'description' => 'CTA',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_name' => array(
+        'description' => 'GRD Name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('id_offer', 'offer_type', 'power', 'price_option'),
+    'indexes' => array(
+      'id_offer' => array('id_offer'),
+      'offer_name' => array('offer_name'),
+      'offer_type' => array('offer_type'),
+      'power' => array('power'),
+      'price_option' => array('price_option'),
+    ),
+  );
+  
+  // Table eni_price_gaz
+  $schema['eni_price_gaz'] = array(
+    'description' => 'The base table for Price Gaz ENI entity.',
+    'fields' => array(
+      'id_offer' => array(
+        'description' => 'ID Offer',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'offer_name' => array(
+        'description' => 'Offer name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'offer_type' => array(
+        'description' => 'Offer type',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      
+      'price_level' => array(
+        'description' => 'Price level',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'price_consumption_level' => array(
+        'description' => 'Consumption level',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'consumption_min' => array(
+        'description' => 'Consumption min',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'consumption_max' => array(
+        'description' => 'Consumption max',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'pourcentage_discount_kwh' => array(
+        'description' => 'Pourcentage discount kwh',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'pourcentage_discount_sub' => array(
+        'description' => 'Pourcentage discount sub',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_price_kwh_ht' => array(
+        'description' => 'ENI Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_price_kwh_ttc' => array(
+        'description' => 'ENI Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_subscription_ht' => array(
+        'description' => 'ENI Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_subscription_ttc' => array(
+        'description' => 'ENI Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_price_kwh_ht' => array(
+        'description' => 'GRD Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_price_kwh_ttc' => array(
+        'description' => 'GRD Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_subscription_ht' => array(
+        'description' => 'GRD Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_subscription_ttc' => array(
+        'description' => 'GRD Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'CTA' => array(
+        'description' => 'CTA',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),      
+      'grd_name' => array(
+        'description' => 'GRD Name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('id_offer', 'offer_type', 'price_level', 'price_consumption_level'),
+    'indexes' => array(
+      'id_offer' => array('id_offer'),
+      'offer_name' => array('offer_name'),
+      'offer_type' => array('offer_type'),
+      'price_level' => array('price_level'),
+      'price_consumption_level' => array('price_consumption_level'),
+      'consumption_min' => array('consumption_min'),
+      'consumption_max' => array('consumption_max'),
+    ),
+  );
+
+  // Table eni_price_electricity
+  $schema['eni_price_electricity'] = array(
+    'description' => 'The base table for Price Electricity ENI entity.',
+    'fields' => array(
+      'id_offer' => array(
+        'description' => 'ID Offer',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'offer_name' => array(
+        'description' => 'Offer name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'offer_type' => array(
+        'description' => 'Offer type',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,        
+      ),
+      'power' => array(
+        'description' => 'Power',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'price_option' => array(
+        'description' => 'Price option',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pourcentage_discount_kwh' => array(
+        'description' => 'Pourcentage discount kwh',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'pourcentage_discount_sub' => array(
+        'description' => 'Pourcentage discount sub',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),      
+      'eni_price_kwh_ht' => array(
+        'description' => 'ENI Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_price_kwh_ttc' => array(
+        'description' => 'ENI Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_subscription_ht' => array(
+        'description' => 'ENI Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_subscription_ttc' => array(
+        'description' => 'ENI Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_price_kwh_ht' => array(
+        'description' => 'GRD Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_price_kwh_ttc' => array(
+        'description' => 'GRD Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_subscription_ht' => array(
+        'description' => 'GRD Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_subscription_ttc' => array(
+        'description' => 'GRD Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'CTA' => array(
+        'description' => 'CTA',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_name' => array(
+        'description' => 'GRD Name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('id_offer', 'offer_type', 'power', 'price_option'),
+    'indexes' => array(
+      'id_offer' => array('id_offer'),
+      'offer_name' => array('offer_name'),
+      'offer_type' => array('offer_type'),
+      'power' => array('power'),
+      'price_option' => array('price_option'),
+    ),
+  );
+  
+  // Table eni_price_gaz
+  $schema['eni_price_gaz'] = array(
+    'description' => 'The base table for Price Gaz ENI entity.',
+    'fields' => array(
+      'id_offer' => array(
+        'description' => 'ID Offer',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'offer_name' => array(
+        'description' => 'Offer name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'offer_type' => array(
+        'description' => 'Offer type',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      
+      'price_level' => array(
+        'description' => 'Price level',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'price_consumption_level' => array(
+        'description' => 'Consumption level',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'consumption_min' => array(
+        'description' => 'Consumption min',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'consumption_max' => array(
+        'description' => 'Consumption max',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'pourcentage_discount_kwh' => array(
+        'description' => 'Pourcentage discount kwh',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'pourcentage_discount_sub' => array(
+        'description' => 'Pourcentage discount sub',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_price_kwh_ht' => array(
+        'description' => 'ENI Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_price_kwh_ttc' => array(
+        'description' => 'ENI Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'eni_subscription_ht' => array(
+        'description' => 'ENI Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'eni_subscription_ttc' => array(
+        'description' => 'ENI Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_price_kwh_ht' => array(
+        'description' => 'GRD Price kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_price_kwh_ttc' => array(
+        'description' => 'GRD Price kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 5,
+      ),
+      'grd_subscription_ht' => array(
+        'description' => 'GRD Sub kWh HT',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'grd_subscription_ttc' => array(
+        'description' => 'GRD Sub kWh TTC',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),
+      'CTA' => array(
+        'description' => 'CTA',
+        'type' => 'numeric',
+        'size' => 'normal',
+        'precision' => 6,
+        'scale' => 3,
+      ),      
+      'grd_name' => array(
+        'description' => 'GRD Name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('id_offer', 'offer_type', 'price_level', 'price_consumption_level'),
+    'indexes' => array(
+      'id_offer' => array('id_offer'),
+      'offer_name' => array('offer_name'),
+      'offer_type' => array('offer_type'),
+      'price_level' => array('price_level'),
+      'price_consumption_level' => array('price_consumption_level'),
+      'consumption_min' => array('consumption_min'),
+      'consumption_max' => array('consumption_max'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function eni_price_install() {
+  // Reset the schema version, so our update hooks can be processed after installation.
+  drupal_set_installed_schema_version('eni_price', '7000');
+}
+
+
+/**
+ * Import the cities via CSV file().
+ */
+function eni_price_update_7001(&$sandbox) {
+  if (!isset($sandbox['offset'])) {
+    $sandbox['offset'] = 0;
+    $sandbox['current'] = 0;
+    $log_filename = 'log_import_city_' . date('Y-m-d_H-i-j') . '.txt';
+  }
+
+  $filename = drupal_get_path('module', 'eni_price') . '/csv/french_city.csv';
+  $fp = fopen($filename, 'r');
+
+  if ($fp === FALSE) {
+    $error_log = t('Failed when open file.');
+    drupal_set_message($error_log);
+    create_file_log($log_filename, $error_log);
+    $sandbox['#finished'] = TRUE;
+    return;
+  }
+
+  $ret = fseek($fp, $sandbox['offset']);
+  if ($ret != 0) {
+    $error_log = t('Failed when seek.');
+    drupal_set_message($error_log);
+    create_file_log($log_filename, $error_log);
+    $sandbox['#finished'] = 1;
+    return;
+  }
+
+  $limit = 1000;  // Maximum number of rows to process at a time.
+
+  for ($i = 0; $i < $limit; $i++) {
+    $line = fgetcsv($fp);
+    if ($line === FALSE) {
+      break;
+    }
+    else {
+      $sandbox['current']++;
+      $sandbox['offset'] = ftell($fp);
+      $record = $sandbox['current'];
+
+      try {
+        $data = array(
+          'insee_code' => trim($line[0]),
+          'postal_code' => trim($line[2]),
+          'city_name' => trim($line[1]),
+          'code_zone' => '',
+        );
+
+        $result = db_insert('eni_city')
+        ->fields($data)
+        ->execute();
+
+      } catch (Exception $ex) {
+        $error_log = t('Could not import city: ') . $line[1] . t(' - Postal code: ') . $line[2];
+        drupal_set_message($error_log);
+        create_file_log($log_filename, $error_log);
+      }
+    }
+  }
+
+  $eof = feof($fp);
+
+  if ($eof) {
+    $sandbox['#finished'] = 1;
+  } else {
+    $sandbox['#finished'] = 0;
+  }
+
+  if ($sandbox['#finished'] === 1) {
+    drupal_set_message(t('Import @cities cities has been done!', array('@cities' => $sandbox['current'])));
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * At uninstall time we'll notify field.module that the entity was deleted
+ * so that attached fields can be cleaned up.
+ *
+ * @ingroup entity_example
+ */
+function eni_price_uninstall() {
+  if (db_table_exists('eni_city')) {
+    db_drop_table('eni_city');
+  }
+  if(db_table_exists('eni_price_electricity')) {
+    db_drop_table('eni_price_electricity');
+  }
+  if(db_table_exists('eni_price_gaz')) {
+    db_drop_table('eni_price_gaz');
+  }
+}
+
+function eni_price_update_7002(&$sandbox) {
+   db_field_set_default('eni_city', 'code_zone', '');
+}

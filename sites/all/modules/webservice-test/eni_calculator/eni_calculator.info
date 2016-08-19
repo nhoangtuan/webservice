@@ -1,0 +1,6 @@
+name = ENI Calculator
+description = The aim of this widget is to ask the user for his energy consumption in order to calculate the price of the offers accordingly.
+core = 7.x
+dependencies[] = eni_price
+package = ENI Price
+version = 7.x-1.0

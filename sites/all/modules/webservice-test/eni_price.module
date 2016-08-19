@@ -1,0 +1,282 @@
+<?php
+
+/**
+ * @file
+ * Code for the ENI Price.
+ */
+
+include_once 'eni_price.features.inc';
+
+/**
+ * Implementation of hook_menu().
+ */
+function eni_price_menu() {
+  $items = array();
+
+  $items['ws/compare/findtownbypostalcode'] = array(
+    'title' => 'Eni Ws Get Town by Postal code.',
+    'page callback' => 'ws_get_town_by_postalcode',
+    'access callback' => TRUE,
+  );
+
+  $items['ws/price/getprice'] = array(
+    'title' => 'Eni Ws Get Price.',
+    'page callback' => 'ws_get_price',
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Create file Error Log (.txt)
+ * @param type $file_log_name
+ * @param type $logging
+ * @param type $uri
+ */
+function create_file_log($file_log_name, $logging, $uri = 'private://import-city/log/') {
+  if ($prepare_file = file_prepare_directory($uri, FILE_CREATE_DIRECTORY)) {
+    $path = drupal_realpath($uri . $file_log_name);
+    $data = '';
+    if (file_exists($path)) {
+      $data = file_get_contents($path);
+    }
+    $logging .= $data;
+    drupal_chmod($uri);
+    file_save_data($logging, $uri . $file_log_name, FILE_EXISTS_REPLACE);
+  }
+}
+
+/**
+ * WS Get Town by Postal code.
+ * Return Json Encode.
+ */
+function ws_get_town_by_postalcode() {
+  $response = array();
+  $param = drupal_get_query_parameters();
+  if (isset($param['postalcode']) && $param['postalcode']) {
+    $datas = db_select('eni_city', 'c')
+    ->fields('c')
+    ->condition('postal_code', $param['postalcode'])
+    ->execute()
+    ->fetchAll();
+
+    if(!empty($datas)) {
+      foreach ($datas as $key => $data) {
+        $response['towns'][$key]['gas'] = $data->gaz_level != 0 ? true : false;
+        $response['towns'][$key]['name'] = $data->city_name;
+        $response['towns'][$key]['electricity'] = ($data->has_electricity == 1) ? true : false;
+        $response['towns'][$key]['id'] = $data->insee_code;
+      }
+      $response['code'] = 1;
+      $response['message'] = t('Get the postal code has success.');
+    } else {
+      $response['towns'] = array();
+      $response['code'] = 0;
+      $response['message'] = t('Get the postal code has not success.');
+    }
+  }
+
+  drupal_json_output($response);
+}
+
+/**
+ * WS get Price.
+ * Return Json Encode.
+ */
+function ws_get_price(){
+  $response = array();
+  $param = drupal_get_query_parameters($_POST);
+  if (isset($param['energy']) && $param['energy']) {
+    switch ($param['energy']) {
+      case 'electricity':
+        $datas = db_select('eni_price_electricity', 'e')
+          ->fields('e',array('id_offer', 'eni_price_kwh_ht','eni_price_kwh_ttc', 'eni_subscription_ht',
+            'eni_subscription_ttc', 'grd_price_kwh_ht', 'grd_price_kwh_ttc', 'grd_subscription_ht', 'grd_subscription_ttc'))
+          ->condition('offer_type', array('dual', 'mono'),'IN')
+          ->execute()
+          ->fetchAll();
+        if(!empty($datas)) {
+          foreach ($datas as $key => $data) {
+            $response['offers']['electricity']['offer_' . $data->id_offer][] = array(
+              'eni_price_kwh_ht' => $data->eni_price_kwh_ht,
+              'eni_price_kwh_ttc' => $data->eni_price_kwh_ttc,
+              'eni_subscription_ht' => $data->eni_subscription_ht,
+              'eni_subscription_ttc' => $data->eni_subscription_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_subscription_ht' => $data->grd_subscription_ht,
+              'grd_subscription_ttc' => $data->grd_subscription_ttc,
+            );
+          }
+          $response['code'] = 1;
+          $response['message'] = t('Get price with electricity has success.');
+        }
+
+        break;
+
+      case 'gaz':
+        $datas = db_select('eni_price_gaz', 'g')
+          ->fields('g',array('id_offer', 'eni_price_kwh_ht','eni_price_kwh_ttc', 'eni_subscription_ht',
+            'eni_subscription_ttc', 'grd_price_kwh_ht', 'grd_price_kwh_ttc', 'grd_subscription_ht', 'grd_subscription_ttc'))
+          ->condition('offer_type', array('dual', 'mono'),'IN')
+          ->execute()
+          ->fetchAll();
+        if(!empty($datas)) {
+          foreach ($datas as $key => $data) {
+            $response['offers']['gaz']['offer_' . $data->id_offer][] = array(
+              'eni_price_kwh_ht' => $data->eni_price_kwh_ht,
+              'eni_price_kwh_ttc' => $data->eni_price_kwh_ttc,
+              'eni_subscription_ht' => $data->eni_subscription_ht,
+              'eni_subscription_ttc' => $data->eni_subscription_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_subscription_ht' => $data->grd_subscription_ht,
+              'grd_subscription_ttc' => $data->grd_subscription_ttc,
+            );
+          }
+          $response['code'] = 1;
+          $response['message'] = t('Get price with gaz has success.');
+        }
+
+        break;
+
+      case'both':
+      case 'dual':
+        $datas_gaz = db_select('eni_price_gaz', 'g')
+          ->fields('g',array('id_offer', 'eni_price_kwh_ht','eni_price_kwh_ttc', 'eni_subscription_ht',
+            'eni_subscription_ttc', 'grd_price_kwh_ht', 'grd_price_kwh_ttc', 'grd_subscription_ht', 'grd_subscription_ttc'))
+          ->execute()
+          ->fetchAll();
+        if(!empty($datas_gaz)) {
+          foreach ($datas_gaz as $key => $data) {
+            $response['offers']['gaz_dual']['offer_' . $data->id_offer][] = array(
+              'eni_price_kwh_ht' => $data->eni_price_kwh_ht,
+              'eni_price_kwh_ttc' => $data->eni_price_kwh_ttc,
+              'eni_subscription_ht' => $data->eni_subscription_ht,
+              'eni_subscription_ttc' => $data->eni_subscription_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_subscription_ht' => $data->grd_subscription_ht,
+              'grd_subscription_ttc' => $data->grd_subscription_ttc,
+            );
+          }
+        }
+
+        $datas_electricity = db_select('eni_price_electricity', 'e')
+          ->fields('e',array('id_offer', 'eni_price_kwh_ht','eni_price_kwh_ttc', 'eni_subscription_ht',
+            'eni_subscription_ttc', 'grd_price_kwh_ht', 'grd_price_kwh_ttc', 'grd_subscription_ht', 'grd_subscription_ttc'))
+          ->execute()
+          ->fetchAll();
+        if(!empty($datas_electricity)) {
+          foreach ($datas_electricity as $key => $data) {
+            $response['offers']['electricity_dual']['offer_' . $data->id_offer][] = array(
+              'eni_price_kwh_ht' => $data->eni_price_kwh_ht,
+              'eni_price_kwh_ttc' => $data->eni_price_kwh_ttc,
+              'eni_subscription_ht' => $data->eni_subscription_ht,
+              'eni_subscription_ttc' => $data->eni_subscription_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_price_kwh_ttc' => $data->grd_price_kwh_ttc,
+              'grd_subscription_ht' => $data->grd_subscription_ht,
+              'grd_subscription_ttc' => $data->grd_subscription_ttc,
+            );
+          }
+        }
+
+        if (!empty($datas_gaz) || !empty($datas_electricity)) {
+          $response['code'] = 1;
+          $response['message'] = t('Get price with either gaz or electricity has success.');
+        }
+
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  // Return code = 0 when not having the price.
+  if (!isset($response['code'])) {
+    $response['code'] = 0;
+    $response['message'] = t('Could not get price.');
+  }
+
+  drupal_json_output($response);
+}
+
+
+/**
+ * Implements hook_feeds_presave
+ * @param FeedsSource $source
+ * @param type $entity
+ * @param type $item
+ */
+function eni_price_feeds_presave(FeedsSource $source, $entity, $item) {
+  
+}
+
+/**
+ * Implements hook_feeds_plugins().
+ */
+function eni_price_feeds_plugins() {
+  $path = drupal_get_path('module', 'eni_price');
+  $info = array();
+  
+  $info['EniFeedsProcessor'] = array(
+    'hidden' => TRUE,
+    'handler' => array(
+      'parent' => 'FeedsPlugin',
+      'class' => 'EniFeedsProcessor',
+      'file' => 'EniFeedsProcessor.inc',
+      'path' => $path,
+    ),
+  );
+  
+  $info['FeedsCityProcessor'] = array(
+    'name' => 'City processor',
+    'description' => 'A generic table processor.',
+    'help' => '',
+    'handler' => array(
+      'parent' => 'FeedsProcessor',
+      'class' => 'FeedsCityProcessor',
+      'file' => 'FeedsCityProcessor.inc',
+      'path' => $path,
+    ),
+  );
+  
+  return $info;
+}
+
+/**
+ * Implements hook_feeds_after_parse
+ * @param FeedsSource $source
+ * @param FeedsParserResult $result
+ */
+function eni_price_feeds_after_parse(FeedsSource $source, FeedsParserResult $result) {
+  if(isset($source->id) && $source->id) {
+    // Reset field in every import 
+    switch ($source->id) {
+      case 'eni_city_gaz_import':
+        $fields = array('gaz_level' => 0);
+        update_field_eni_city($fields);
+
+        break;
+      case 'eni_city_electricity_import':
+        $fields = array('has_electricity' => 0);
+        update_field_eni_city($fields);
+
+        break;
+    } 
+  }
+}
+ 
+/**
+ * Update fields in table eni_city
+ */
+function update_field_eni_city($fields) {
+  $update_eni_city = db_update('eni_city')
+    ->fields($fields)
+    ->execute();
+
+  return $update_eni_city;
+}

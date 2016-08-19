@@ -1,0 +1,6 @@
+name = Web Service ENI
+core = 7.x
+description = The module to handle create webservice.
+package = ENI Subscription
+project path = profiles\eni\modules\custom\eni_service
+version = 7.x-1.0
