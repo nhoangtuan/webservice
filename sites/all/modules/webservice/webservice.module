@@ -1,0 +1,32 @@
+<?php
+function webservice_services_resources() {
+  $api = array(
+    'test' => array(
+      'operations' => array(
+        'calculator' => array(
+          'help' => 'Demo Calculator',
+          'callback' => '_webservice_calculator',
+          'access callback' => 'user_access',
+          'access arguments' => array('attach file to node'),
+          'access arguments append' => FALSE,
+          'args' => array(
+            array(
+              'name' => 'fn',
+              'type' => 'string',
+              'description' => 'Function to perform',
+              'source' => array('path' => '0'),
+              'optional' => TRUE,
+              'default' => '0',
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return $api;
+}
+
+function _webservice_calculator($fn){
+  return $fn;
+}

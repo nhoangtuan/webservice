@@ -1,0 +1,9 @@
+cd Download 
+sudo chmod +x SoapUI-x64-5.2.1.sh
+./SoapUI-x64-5.2.1.sh
+
+--------------------------------------
+unstall 
+cd SmartBear/
+cd SoapUI-5.2.1/
+./uninstall

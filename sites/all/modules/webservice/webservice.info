@@ -1,0 +1,7 @@
+name = Example Soap Services
+description = WebService APIs.
+core = 7.x
+;package = Housing Schemes
+;project = housing_schemes
+dependencies[] = services
+dependencies[] = soap_server
